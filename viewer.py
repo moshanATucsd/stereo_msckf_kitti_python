@@ -2,10 +2,9 @@ import numpy as np
 import OpenGL.GL as gl
 import pangolin
 import cv2
-
 from multiprocessing import Queue, Process
 
-
+from utils import *
 
 class Viewer(object):
     def __init__(self):
@@ -166,8 +165,9 @@ class DynamicArray(object):
 
 
 if __name__ == '__main__':
-    import g2o
     import time
 
     viewer = Viewer()
-    viewer.update_pose(g2o.Isometry3d())
+
+    my_SE3 = Isometry3d(np.eye(3), np.zeros(3))
+    viewer.update_pose(my_SE3)

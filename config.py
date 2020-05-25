@@ -25,13 +25,13 @@ class ConfigKitti(object):
         # Calibration, timestamps, and IMU data are read automatically. 
         # Camera and velodyne data are available via properties that create generators
         # when accessed, or through getter methods that provide random access.
-        data = pykitti.raw(basedir, date, drive, frames=range(0, 50, 5))
+        self.kitti_data = pykitti.raw(basedir, date, drive, frames=range(0, 50, 5))
 
         # from velo frame to cam frame 
-        T_velo_cam0 = data.calib.T_cam0_velo
-        T_velo_cam1 = data.calib.T_cam1_velo
+        T_velo_cam0 = self.kitti_data.calib.T_cam0_velo
+        T_velo_cam1 = self.kitti_data.calib.T_cam1_velo
         # from velo frame to imu frame 
-        T_imu_velo = data.calib.T_velo_imu
+        T_imu_velo = self.kitti_data.calib.T_velo_imu
 
         # feature position optimization
         self.optimization_config = OptimizationConfigKitti()
@@ -63,7 +63,8 @@ class ConfigKitti(object):
 
         ## msckf vio
         # gravity
-        self.gravity_acc = 9.81
+        # self.gravity_acc = 9.81
+        self.gravity_acc = 0
         self.gravity = np.array([0.0, 0.0, -self.gravity_acc])
 
         # Framte rate of the stereo images. This variable is only used to 
@@ -111,8 +112,7 @@ class ConfigKitti(object):
         self.T_imu_cam0 = T_velo_cam0 * T_imu_velo
         self.cam0_camera_model = 'pinhole'
         self.cam0_distortion_model = 'radtan'
-        self.cam0_distortion_coeffs = np.array(
-            [0, 0, 0, 0])
+        self.cam0_distortion_coeffs = np.array([[0., 0., 0., 0.]])
         self.cam0_intrinsics = np.array([9.786977e+02, 6.900000e+02, 9.717435e+02, 2.497222e+02])
         self.cam0_resolution = np.array([1392, 512])
 
@@ -120,8 +120,7 @@ class ConfigKitti(object):
         self.T_cn_cnm1 = self.T_imu_cam1 * np.linalg.inv(self.T_imu_cam0)
         self.cam1_camera_model = 'pinhole'
         self.cam1_distortion_model = 'radtan'
-        self.cam1_distortion_coeffs = np.array(
-            [0,  0, 0, 0])
+        self.cam1_distortion_coeffs = np.array([[0.,  0., 0., 0.]])
         self.cam1_intrinsics = np.array([9.892043e+02, 7.020000e+02, 9.832048e+02, 2.616538e+02])
         self.cam1_resolution = np.array([1392, 512])
         # self.baseline = 

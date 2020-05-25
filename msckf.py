@@ -14,7 +14,7 @@ class IMUState(object):
     next_id = 0
 
     # Gravity vector in the world frame
-    gravity = np.array([0., 0., -9.81])
+    gravity = np.array([0., 0., 0.])
 
     # Transformation offset from the IMU frame to the body frame. 
     # The transformation takes a vector from the IMU frame to the 
@@ -169,9 +169,8 @@ class MSCKF(object):
         self.imu_msg_buffer.append(imu_msg)
 
         if not self.is_gravity_set:
-            if len(self.imu_msg_buffer) >= 200:
-                self.initialize_gravity_and_bias()
-                self.is_gravity_set = True
+            self.initialize_gravity_and_bias()
+            self.is_gravity_set = True
 
     def feature_callback(self, feature_msg):
         """
@@ -233,25 +232,11 @@ class MSCKF(object):
         Initialize the IMU bias and initial orientation based on the 
         first few IMU readings.
         """
-        sum_angular_vel = np.zeros(3)
-        sum_linear_acc = np.zeros(3)
-        for msg in self.imu_msg_buffer:
-            sum_angular_vel += msg.angular_velocity
-            sum_linear_acc += msg.linear_acceleration
 
-        gyro_bias = sum_angular_vel / len(self.imu_msg_buffer)
-        self.state_server.imu_state.gyro_bias = gyro_bias
-
-        # This is the gravity in the IMU frame.
-        gravity_imu = sum_linear_acc / len(self.imu_msg_buffer)
-
-        # Initialize the initial orientation, so that the estimation
-        # is consistent with the inertial frame.
-        gravity_norm = np.linalg.norm(gravity_imu)
-        IMUState.gravity = np.array([0., 0., -gravity_norm])
-
-        self.state_server.imu_state.orientation = from_two_vectors(
-            -IMUState.gravity, gravity_imu)
+        first_pose = self.config.kitti_data.oxts[0].T_w_imu
+        wRi0 = first_pose[:3, :3]
+        iRw0 = wRi0.T
+        self.state_server.imu_state.orientation = to_quaternion(iRw0)
 
     # Filter related functions
     # (batch_imu_processing, process_model, predict_new_state)
@@ -320,20 +305,6 @@ class MSCKF(object):
         R_kk_1 = to_rotation(imu_state.orientation_null)
         Phi[:3, :3] = to_rotation(imu_state.orientation) @ R_kk_1.T
 
-        u = R_kk_1 @ IMUState.gravity
-        # s = (u.T @ u).inverse() @ u.T
-        # s = np.linalg.inv(u[:, None] * u) @ u
-        s = u / (u @ u)
-
-        A1 = Phi[6:9, :3]
-        w1 = skew(imu_state.velocity_null - imu_state.velocity) @ IMUState.gravity
-        Phi[6:9, :3] = A1 - (A1 @ u - w1)[:, None] * s
-
-        A2 = Phi[12:15, :3]
-        w2 = skew(dt*imu_state.velocity_null+imu_state.position_null - 
-            imu_state.position) @ IMUState.gravity
-        Phi[12:15, :3] = A2 - (A2 @ u - w2)[:, None] * s
-
         # Propogate the state covariance matrix.
         Q = Phi @ G @ self.state_server.continuous_noise_cov @ G.T @ Phi.T * dt
         self.state_server.state_cov[:21, :21] = (
@@ -357,6 +328,7 @@ class MSCKF(object):
     def predict_new_state(self, dt, gyro, acc):
         # TODO: Will performing the forward integration using
         # the inverse of the quaternion give better accuracy?
+        gyro[2] -= 9.81
         gyro_norm = np.linalg.norm(gyro)
         Omega = np.zeros((4, 4))
         Omega[:3, :3] = -skew(gyro)
@@ -527,15 +499,6 @@ class MSCKF(object):
         H_x = dz_dpc0 @ dpc0_dxc + dz_dpc1 @ dpc1_dxc   # shape: (4, 6)
         H_f = dz_dpc0 @ dpc0_dpg + dz_dpc1 @ dpc1_dpg   # shape: (4, 3)
 
-        # Modifty the measurement Jacobian to ensure observability constrain.
-        A = H_x   # shape: (4, 6)
-        u = np.zeros(6)
-        u[:3] = to_rotation(cam_state.orientation_null) @ IMUState.gravity
-        u[3:] = skew(p_w - cam_state.position_null) @ IMUState.gravity
-
-        H_x = A - (A @ u)[:, None] * u / (u @ u)
-        H_f = -H_x[:4, 3:6]
-
         # Compute the residual.
         r = z - np.array([*p_c0[:2]/p_c0[2], *p_c1[:2]/p_c1[2]])
 
@@ -588,6 +551,8 @@ class MSCKF(object):
         return H_x, r
 
     def measurement_update(self, H, r):
+        return 
+
         if len(H) == 0 or len(r) == 0:
             return
 

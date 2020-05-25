@@ -1,12 +1,13 @@
 
 from queue import Queue
 from threading import Thread
+import time
 
-from config import ConfigEuRoC
+from config import ConfigKitti
 from image import ImageProcessor
 from msckf import MSCKF
-
-
+from dataset import kittiDataset, DataPublisher
+from viewer import Viewer
 
 class VIO(object):
     def __init__(self, config, img_queue, imu_queue, viewer=None):
@@ -38,7 +39,7 @@ class VIO(object):
             if self.viewer is not None:
                 self.viewer.update_image(img_msg.cam0_image)
 
-            feature_msg = self.image_processor.stareo_callback(img_msg)
+            feature_msg = self.image_processor.stereo_callback(img_msg)
 
             if feature_msg is not None:
                 self.feature_queue.put(feature_msg)
@@ -65,28 +66,14 @@ class VIO(object):
                 self.viewer.update_pose(result.cam0_pose)
         
 
-
 if __name__ == '__main__':
-    import time
-    import argparse
 
-    from dataset import kittiDataset, DataPublisher
-    from viewer import Viewer
+    viewer = Viewer()
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--path', type=str, default='path/to/your/EuRoC_MAV_dataset/MH_01_easy', 
-        help='Path of EuRoC MAV dataset.')
-    parser.add_argument('--view', action='store_true', help='Show trajectory.')
-    args = parser.parse_args()
-
-    if args.view:
-        viewer = Viewer()
-    else:
-        viewer = None
-
-    dataset = kittiDataset(args.path)
-    dataset.set_starttime(offset=40.)   # start from static state
-
+    img_path = '/media/erl/disk2/kitti/2011_09_30/2011_09_30_drive_0027_extract'
+    data_path = '/home/erl/Workspace/deep_ekf_vio/data/K07'
+    dataset = kittiDataset(img_path, data_path)
+    dataset.set_starttime(offset=0.)   # start from static state
 
     img_queue = Queue()
     imu_queue = Queue()
@@ -94,7 +81,6 @@ if __name__ == '__main__':
 
     config = ConfigKitti()
     msckf_vio = VIO(config, img_queue, imu_queue, viewer=viewer)
-
 
     duration = float('inf')
     ratio = 0.4  # make it smaller if image processing and MSCKF computation is slow
