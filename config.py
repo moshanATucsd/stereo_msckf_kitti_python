@@ -1,8 +1,9 @@
 import numpy as np
 import cv2
 
+import pykitti
 
-class OptimizationConfigEuRoC(object):
+class OptimizationConfigKitti(object):
     """
     Configuration parameters for 3d feature position optimization.
     """
@@ -14,10 +15,26 @@ class OptimizationConfigEuRoC(object):
         self.outer_loop_max_iteration = 5 # 10
         self.inner_loop_max_iteration = 5 # 10
 
-class ConfigEuRoC(object):
+class ConfigKitti(object):
     def __init__(self):
+        basedir = '/media/erl/disk2/kitti'
+        date = '2011_09_30'
+        drive = '0027'
+
+        # The 'frames' argument is optional - default: None, which loads the whole dataset.
+        # Calibration, timestamps, and IMU data are read automatically. 
+        # Camera and velodyne data are available via properties that create generators
+        # when accessed, or through getter methods that provide random access.
+        data = pykitti.raw(basedir, date, drive, frames=range(0, 50, 5))
+
+        # from velo frame to cam frame 
+        T_velo_cam0 = data.calib.T_cam0_velo
+        T_velo_cam1 = data.calib.T_cam1_velo
+        # from velo frame to imu frame 
+        T_imu_velo = data.calib.T_velo_imu
+
         # feature position optimization
-        self.optimization_config = OptimizationConfigEuRoC()
+        self.optimization_config = OptimizationConfigKitti()
 
         ## image processor
         self.grid_row = 4
@@ -91,34 +108,32 @@ class ConfigEuRoC(object):
         # T_imu_cam: takes a vector from the IMU frame to the cam frame.
         # T_cn_cnm1: takes a vector from the cam0 frame to the cam1 frame.
         # see https://github.com/ethz-asl/kalibr/wiki/yaml-formats
-        self.T_imu_cam0 = np.array([
-            [ 0.014865542981794,   0.999557249008346,  -0.025774436697440,   0.065222909535531],
-            [-0.999880929698575,   0.014967213324719,   0.003756188357967,  -0.020706385492719],
-            [ 0.004140296794224,   0.025715529947966,   0.999660727177902,  -0.008054602460030],
-            [                 0,                   0,                   0,   1.000000000000000]])
+        self.T_imu_cam0 = T_velo_cam0 * T_imu_velo
         self.cam0_camera_model = 'pinhole'
         self.cam0_distortion_model = 'radtan'
         self.cam0_distortion_coeffs = np.array(
-            [-0.28340811, 0.07395907, 0.00019359, 1.76187114e-05])
-        self.cam0_intrinsics = np.array([458.654, 457.296, 367.215, 248.375])
-        self.cam0_resolution = np.array([752, 480])
+            [0, 0, 0, 0])
+        self.cam0_intrinsics = np.array([9.786977e+02, 6.900000e+02, 9.717435e+02, 2.497222e+02])
+        self.cam0_resolution = np.array([1392, 512])
 
-        self.T_imu_cam1 = np.array([
-            [ 0.012555267089103,   0.999598781151433,  -0.025389800891747,  -0.044901980682509],
-            [-0.999755099723116,   0.013011905181504,   0.017900583825251,  -0.020569771258915],
-            [ 0.018223771455443,   0.025158836311552,   0.999517347077547,  -0.008638135126028],
-            [                 0,                   0,                   0,   1.000000000000000]])
-        self.T_cn_cnm1 = np.array([
-            [ 0.999997256477881,   0.002312067192424,   0.000376008102415,  -0.110073808127187],
-            [-0.002317135723281,   0.999898048506644,   0.014089835846648,   0.000399121547014],
-            [-0.000343393120525,  -0.014090668452714,   0.999900662637729,  -0.000853702503357],
-            [                 0,                   0,                   0,   1.000000000000000]])
+        self.T_imu_cam1 = T_velo_cam1 * T_imu_velo
+        self.T_cn_cnm1 = self.T_imu_cam1 * np.linalg.inv(self.T_imu_cam0)
         self.cam1_camera_model = 'pinhole'
         self.cam1_distortion_model = 'radtan'
         self.cam1_distortion_coeffs = np.array(
-            [-0.28368365,  0.07451284, -0.00010473, -3.55590700e-05])
-        self.cam1_intrinsics = np.array([457.587, 456.134, 379.999, 255.238])
-        self.cam1_resolution = np.array([752, 480])
+            [0,  0, 0, 0])
+        self.cam1_intrinsics = np.array([9.892043e+02, 7.020000e+02, 9.832048e+02, 2.616538e+02])
+        self.cam1_resolution = np.array([1392, 512])
         # self.baseline = 
 
         self.T_imu_body = np.identity(4)
+
+if __name__ == '__main__':
+
+    config = ConfigKitti()
+    print("T from imu frame to cam0 frame")
+    print(config.T_imu_cam0)
+    print("T from imu frame to cam1 frame")
+    print(config.T_imu_cam1)
+    print("T from cam0 frame to cam1 frame")
+    print(config.T_cn_cnm1)

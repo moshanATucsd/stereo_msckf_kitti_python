@@ -92,7 +92,7 @@ if __name__ == '__main__':
     imu_queue = Queue()
     # gt_queue = Queue()
 
-    config = ConfigEuRoC()
+    config = ConfigKitti()
     msckf_vio = VIO(config, img_queue, imu_queue, viewer=viewer)
 
 
