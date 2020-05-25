@@ -187,9 +187,9 @@ class Stereo(object):
         
     
 
-class kittiDataset(object):   # Stereo + IMU
+class EuRoCDataset(object):   # Stereo + IMU
     '''
-    path example: '/media/erl/disk2/kitti/2011_09_30/2011_09_30_drive_0027_extract'
+    path example: 'path/to/your/EuRoC Mav Dataset/MH_01_easy'
     '''
     def __init__(self, path):
         self.groundtruth = GroundTruthReader(os.path.join(
@@ -197,18 +197,15 @@ class kittiDataset(object):   # Stereo + IMU
         self.imu = IMUDataReader(os.path.join(
             path, 'mav0', 'imu0', 'data.csv'), 1e-9)
         self.cam0 = ImageReader(
-            *self.list_imgs(os.path.join(path, 'image_02', 'data')))
+            *self.list_imgs(os.path.join(path, 'mav0', 'cam0', 'data')))
         self.cam1 = ImageReader(
-            *self.list_imgs(os.path.join(path, 'image_03', 'data')))
+            *self.list_imgs(os.path.join(path, 'mav0', 'cam1', 'data')))
 
         self.stereo = Stereo(self.cam0, self.cam1)
         self.timestamps = self.cam0.timestamps
 
-        # self.starttime = max(self.imu.start_time(), self.stereo.start_time())
-        # self.set_starttime(0)
-
-        self.starttime = 0
-        self.stereo.set_starttime(0)
+        self.starttime = max(self.imu.start_time(), self.stereo.start_time())
+        self.set_starttime(0)
 
     def set_starttime(self, offset):
         self.groundtruth.set_starttime(self.starttime + offset)
@@ -278,24 +275,24 @@ class DataPublisher(object):
 if __name__ == '__main__':
     from queue import Queue
 
-    path = '/media/erl/disk2/kitti/2011_09_30/2011_09_30_drive_0027_extract'
-    dataset = kittiDataset(path)
-    dataset.set_starttime(offset=0)
+    path = 'path/to/your/EuRoC Mav Dataset/MH_01_easy'
+    dataset = EuRoCDataset(path)
+    dataset.set_starttime(offset=30)
 
     img_queue = Queue()
-    # imu_queue = Queue()
-    # gt_queue = Queue()
+    imu_queue = Queue()
+    gt_queue = Queue()
 
     duration = 1
-    # imu_publisher = DataPublisher(
-    #     dataset.imu, imu_queue, duration)
+    imu_publisher = DataPublisher(
+        dataset.imu, imu_queue, duration)
     img_publisher = DataPublisher(
         dataset.stereo, img_queue, duration)
-    # gt_publisher = DataPublisher(
-    #     dataset.groundtruth, gt_queue, duration)
+    gt_publisher = DataPublisher(
+        dataset.groundtruth, gt_queue, duration)
 
     now = time.time()
-    # imu_publisher.start(now)
+    imu_publisher.start(now)
     img_publisher.start(now)
     # gt_publisher.start(now)
 
@@ -305,10 +302,10 @@ if __name__ == '__main__':
             if x is None:
                 return
             print(x.timestamp, source)
-    # t2 = Thread(target=print_msg, args=(imu_queue, 'imu'))
-    # t3 = Thread(target=print_msg, args=(gt_queue, 'groundtruth'))
-    # t2.start()
-    # t3.start()
+    t2 = Thread(target=print_msg, args=(imu_queue, 'imu'))
+    t3 = Thread(target=print_msg, args=(gt_queue, 'groundtruth'))
+    t2.start()
+    t3.start()
 
     timestamps = []
     while True:
@@ -320,11 +317,11 @@ if __name__ == '__main__':
         cv2.waitKey(1)
         timestamps.append(x.timestamp)
 
-    # imu_publisher.stop()
+    imu_publisher.stop()
     img_publisher.stop()
-    # gt_publisher.stop()
-    # t2.join()
-    # t3.join()
+    gt_publisher.stop()
+    t2.join()
+    t3.join()
 
     print(f'\nelapsed time: {time.time() - now}s')
     print(f'dataset time interval: {timestamps[-1]} -> {timestamps[0]}'

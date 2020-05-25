@@ -70,7 +70,7 @@ if __name__ == '__main__':
     import time
     import argparse
 
-    from dataset import EuRoCDataset, DataPublisher
+    from dataset import kittiDataset, DataPublisher
     from viewer import Viewer
 
     parser = argparse.ArgumentParser()
@@ -84,7 +84,7 @@ if __name__ == '__main__':
     else:
         viewer = None
 
-    dataset = EuRoCDataset(args.path)
+    dataset = kittiDataset(args.path)
     dataset.set_starttime(offset=40.)   # start from static state
 
 
