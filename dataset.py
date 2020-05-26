@@ -54,8 +54,8 @@ class IMUDataReader(object):
         """
         """
         timestamp = self.df.loc[i, "imu_timestamps"][j]
-        wm = self.df.loc[i, "accel_measurements"][j]
-        am = self.df.loc[i, "gyro_measurements"][j]
+        wm = self.df.loc[i, "gyro_measurements"][j]
+        am = self.df.loc[i, "accel_measurements"][j]
         # print("imu timestamps {}".format(timestamp))
         return self.field(timestamp, wm, am)
 
@@ -128,9 +128,9 @@ class ImageReader(object):
 
     def __getitem__(self, idx):
         self.idx = idx
-        # if not self.thread_started:
-        #     self.thread_started = True
-        #     self.preload_thread.start()
+        if not self.thread_started:
+            self.thread_started = True
+            self.preload_thread.start()
 
         if idx in self.cache:
             img = self.cache[idx]
@@ -257,13 +257,12 @@ class DataPublisher(object):
                 if self.stopped:
                     return
 
-            # if interval <= self.duration + 1e-3:
-            #     self.out_queue.put(data)
-            # else:
-            #     print("exception")
-            #     self.out_queue.put(None)
-            #     return
-            self.out_queue.put(data)
+            if interval <= self.duration + 1e-3:
+                self.out_queue.put(data)
+            else:
+                print("exception")
+                self.out_queue.put(None)
+                return
 
 def print_msg(in_queue, source):
     while True:

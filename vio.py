@@ -83,7 +83,8 @@ if __name__ == '__main__':
     msckf_vio = VIO(config, img_queue, imu_queue, viewer=viewer)
 
     duration = float('inf')
-    ratio = 0.4  # make it smaller if image processing and MSCKF computation is slow
+    # ratio = 0.4  # make it smaller if image processing and MSCKF computation is slow
+    ratio = 0.4
     imu_publisher = DataPublisher(
         dataset.imu, imu_queue, duration, ratio)
     img_publisher = DataPublisher(

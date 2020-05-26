@@ -63,8 +63,7 @@ class ConfigKitti(object):
 
         ## msckf vio
         # gravity
-        # self.gravity_acc = 9.81
-        self.gravity_acc = 0
+        self.gravity_acc = 9.81
         self.gravity = np.array([0.0, 0.0, -self.gravity_acc])
 
         # Framte rate of the stereo images. This variable is only used to 
@@ -109,15 +108,15 @@ class ConfigKitti(object):
         # T_imu_cam: takes a vector from the IMU frame to the cam frame.
         # T_cn_cnm1: takes a vector from the cam0 frame to the cam1 frame.
         # see https://github.com/ethz-asl/kalibr/wiki/yaml-formats
-        self.T_imu_cam0 = T_velo_cam0 * T_imu_velo
+        self.T_imu_cam0 = T_velo_cam0 @ T_imu_velo
         self.cam0_camera_model = 'pinhole'
         self.cam0_distortion_model = 'radtan'
         self.cam0_distortion_coeffs = np.array([[0., 0., 0., 0.]])
         self.cam0_intrinsics = np.array([9.786977e+02, 6.900000e+02, 9.717435e+02, 2.497222e+02])
         self.cam0_resolution = np.array([1392, 512])
 
-        self.T_imu_cam1 = T_velo_cam1 * T_imu_velo
-        self.T_cn_cnm1 = self.T_imu_cam1 * np.linalg.inv(self.T_imu_cam0)
+        self.T_imu_cam1 = T_velo_cam1 @ T_imu_velo
+        self.T_cn_cnm1 = self.T_imu_cam1 @ np.linalg.inv(self.T_imu_cam0)
         self.cam1_camera_model = 'pinhole'
         self.cam1_distortion_model = 'radtan'
         self.cam1_distortion_coeffs = np.array([[0.,  0., 0., 0.]])
