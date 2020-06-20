@@ -37,11 +37,14 @@ class ConfigKitti(object):
         self.optimization_config = OptimizationConfigKitti()
 
         ## image processor
-        self.grid_row = 4
-        self.grid_col = 5
+        self.grid_row = 5
+        self.grid_col = 10
+
         self.grid_num = self.grid_row * self.grid_col
-        self.grid_min_feature_num = 3
-        self.grid_max_feature_num = 5
+
+        self.grid_min_feature_num = 5
+        self.grid_max_feature_num = 10
+        
         self.fast_threshold = 15
         self.ransac_threshold = 3
         self.stereo_threshold = 5
@@ -68,7 +71,7 @@ class ConfigKitti(object):
 
         # Framte rate of the stereo images. This variable is only used to 
         # determine the timing threshold of each iteration of the filter.
-        self.frame_rate = 20
+        self.frame_rate = 10
 
         # Maximum number of camera states to be stored
         self.max_cam_state_size = 20

@@ -345,7 +345,6 @@ class ImageProcessor(object):
         # prev_feature_num = sum([len(x) for x in self.prev_features])
         # curr_feature_num = sum([len(x) for x in self.curr_features])
 
-
     def add_new_features(self):
         """
         Detect new features on the image to ensure that the features are 
