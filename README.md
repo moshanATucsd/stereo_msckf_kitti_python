@@ -1,3 +1,7 @@
+## how to run 
+
+- `python vio.py --view --path /media/erl/disk2/euroc/MH_01_easy`
+
 ## references 
 
 - [stereo msckf](https://github.com/uoip/stereo_ptam/blob/master/dataset.py)
