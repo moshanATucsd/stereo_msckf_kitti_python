@@ -2,6 +2,10 @@
 
 - `python vio.py --view --path /media/erl/disk2/euroc/MH_01_easy`
 
+## results 
+
+- [video demo](https://youtu.be/zlyRxrF3Y1Y) for propagation step 
+
 ## references 
 
 - [stereo msckf](https://github.com/uoip/stereo_ptam/blob/master/dataset.py)
